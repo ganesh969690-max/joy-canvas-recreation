@@ -270,7 +270,7 @@ const WorkoutsView = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex-wrap gap-2 mb-4 flex-row flex items-center justify-center">
                   {quickPrompts.map((p) => (
                     <button key={p} onClick={() => handleAdapt(p)} className="chip-filter active:scale-95 transition-transform">{p}</button>
                   ))}
