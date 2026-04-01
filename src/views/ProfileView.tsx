@@ -8,7 +8,7 @@ const stats = [
   { label: "Workouts", value: "142" },
   { label: "Total Minutes", value: "4,520" },
   { label: "Streak", value: "12 Days" },
-  { label: "Avg / Week", value: "4.2" },
+  { label: "AVG WORKOUTS / WEEK", value: "4.2" },
 ];
 
 const badges = [
