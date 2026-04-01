@@ -132,7 +132,7 @@ const ProfileView = () => {
       </div>
 
       {showRecalibrate && (
-        <div className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-end justify-center">
+        <div className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-background w-full max-w-lg rounded-t-3xl p-6 pb-8 animate-in slide-in-from-bottom duration-300">
             {regenerating ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
