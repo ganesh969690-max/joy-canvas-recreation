@@ -247,7 +247,7 @@ const WorkoutsView = () => {
 
       {showAdjust && (
         <div className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-background w-full max-w-lg rounded-t-3xl p-6 pb-8 animate-in slide-in-from-bottom duration-300">
+          <div className="bg-background w-full max-w-lg rounded-t-3xl p-6 pb-8 animate-in slide-in-from-bottom duration-300 rounded-3xl">
             {adjusting ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
                 <div className="bg-primary rounded-full p-6">
@@ -270,7 +270,7 @@ const WorkoutsView = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex-wrap gap-2 mb-4 flex-row flex items-center justify-center">
                   {quickPrompts.map((p) => (
                     <button key={p} onClick={() => handleAdapt(p)} className="chip-filter active:scale-95 transition-transform">{p}</button>
                   ))}
