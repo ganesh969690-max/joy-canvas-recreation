@@ -1,5 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { corsHeaders } from "@supabase/supabase-js/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 const USDA_API_URL = "https://api.nal.usda.gov/fdc/v1/foods/search";
 
