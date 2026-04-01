@@ -218,7 +218,7 @@ const NutritionView = () => {
 
       {/* Editable Macro Confirmation Card */}
       {confirmMeal && (
-        <div className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-end justify-center">
+        <div className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-background w-full max-w-lg rounded-t-3xl p-6 pb-8 animate-in slide-in-from-bottom duration-300">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-nike-header text-base">{confirmMeal.name}</h2>
