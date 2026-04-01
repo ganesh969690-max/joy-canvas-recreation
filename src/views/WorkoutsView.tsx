@@ -3,7 +3,8 @@ import { Sparkles, X, Clock, Dumbbell, AlertCircle, Loader2, Play, Pause, Square
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import WorkoutCard from "@/components/WorkoutCard";
-import { defaultWorkout, modifications, promptToModKey, type Workout } from "@/data/workoutData";
+import { defaultWorkout, type Workout } from "@/data/workoutData";
+import { supabase } from "@/integrations/supabase/client";
 import legsImg from "@/assets/workout-legs.jpg";
 import metconImg from "@/assets/workout-dumbbell-metcon.jpg";
 import yogaImg from "@/assets/workout-yoga.jpg";
@@ -17,12 +18,6 @@ const quickPrompts = [
   "No Equipment",
   "Less Time",
   "Different Muscle Group",
-];
-
-const generatedExercises = [
-  { name: "Modified Goblet Squat", reps: "12 reps × 3 sets", note: "Knee-friendly depth" },
-  { name: "Dumbbell Floor Press", reps: "10 reps × 3 sets", note: "No bench needed" },
-  { name: "Single-Leg RDL", reps: "8 each × 3 sets", note: "Light weight, slow tempo" },
 ];
 
 const browseWorkouts = [
@@ -42,6 +37,7 @@ const WorkoutsView = () => {
   const [showGenerator, setShowGenerator] = useState(false);
   const [genLoading, setGenLoading] = useState(false);
   const [genResult, setGenResult] = useState(false);
+  const [generatedWorkout, setGeneratedWorkout] = useState<Workout | null>(null);
   const [genTime, setGenTime] = useState("20");
   const [genEquip, setGenEquip] = useState("5kg Dumbbells");
   const [genConstraint, setGenConstraint] = useState("");
@@ -96,25 +92,44 @@ const WorkoutsView = () => {
     });
   };
 
-  const handleAdapt = (prompt: string) => {
-    const modKey = promptToModKey[prompt] || "hotel_gym";
-    const mod = modifications[modKey];
+  const handleAdapt = async (prompt: string) => {
     setAdjusting(true);
-    setTimeout(() => {
-      setAdjusting(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-workout', {
+        body: { type: "adjust", prompt, currentWorkout },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const workout = data.workout as Workout;
+      setCurrentWorkout(workout);
       setShowAdjust(false);
-      setCurrentWorkout(mod);
-      toast({ title: "Workout Adapted ✓", description: mod.toast_message || "Workout updated." });
-    }, 2000);
+      toast({ title: "Workout Adapted ✓", description: `Switched to: ${workout.title}` });
+    } catch (err: any) {
+      console.error("Adapt error:", err);
+      toast({ title: "Error", description: err.message || "Failed to adapt workout", variant: "destructive" });
+    } finally {
+      setAdjusting(false);
+    }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setGenLoading(true);
     setGenResult(false);
-    setTimeout(() => {
-      setGenLoading(false);
+    setGeneratedWorkout(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-workout', {
+        body: { type: "generate", time: genTime, equipment: genEquip, constraints: genConstraint, goals: genGoal },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setGeneratedWorkout(data.workout as Workout);
       setGenResult(true);
-    }, 2000);
+    } catch (err: any) {
+      console.error("Generate error:", err);
+      toast({ title: "Error", description: err.message || "Failed to generate workout", variant: "destructive" });
+    } finally {
+      setGenLoading(false);
+    }
   };
 
   if (playing) {
@@ -216,7 +231,7 @@ const WorkoutsView = () => {
       </button>
 
       <button
-        onClick={() => { setShowGenerator(true); setGenResult(false); setGenLoading(false); }}
+        onClick={() => { setShowGenerator(true); setGenResult(false); setGenLoading(false); setGeneratedWorkout(null); }}
         className="w-full flex items-center justify-center gap-2 border border-border rounded-2xl py-3 mb-6 active:scale-[0.98] transition-transform"
       >
         <Sparkles size={16} className="text-nike-volt" />
@@ -239,7 +254,7 @@ const WorkoutsView = () => {
                   <Loader2 size={32} className="text-nike-volt animate-spin" />
                 </div>
                 <p className="text-sm font-bold text-center">Generating...</p>
-                <p className="text-xs text-muted-foreground text-center">Rebuilding workout based on your constraint...</p>
+                <p className="text-xs text-muted-foreground text-center">AI is rebuilding your workout...</p>
               </div>
             ) : (
               <>
@@ -295,30 +310,30 @@ const WorkoutsView = () => {
                   {genLoading ? (<><Loader2 size={18} className="animate-spin" /><span>Generating...</span></>) : "Generate"}
                 </button>
               </div>
-            ) : (
+            ) : generatedWorkout ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles size={16} className="text-nike-volt" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Custom {genTime}-Min Routine</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{generatedWorkout.title}</span>
                 </div>
-                {generatedExercises.map((ex, i) => (
-                  <div key={ex.name} className="bg-secondary rounded-xl p-4">
+                <div className="flex gap-3 mb-2">
+                  <span className="text-xs text-muted-foreground font-semibold">Intensity: {generatedWorkout.intensity}</span>
+                  <span className="text-xs text-muted-foreground font-semibold">Equipment: {generatedWorkout.equipment.join(", ")}</span>
+                </div>
+                {generatedWorkout.exercises.map((ex, i) => (
+                  <div key={i} className="bg-secondary rounded-xl p-4">
                     <div className="flex items-start justify-between">
                       <div>
                         <span className="text-xs font-black text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
                         <h4 className="font-bold text-sm mt-0.5">{ex.name}</h4>
-                        <p className="text-xs text-muted-foreground mt-0.5">{ex.reps}</p>
-                      </div>
-                      <div className="flex items-center gap-1 bg-background rounded-full px-2 py-1">
-                        <AlertCircle size={12} className="text-nike-volt" />
-                        <span className="text-[10px] font-semibold">{ex.note}</span>
+                        <p className="text-xs text-muted-foreground mt-0.5">{ex.sets} sets × {ex.reps}</p>
                       </div>
                     </div>
                   </div>
                 ))}
-                <button onClick={() => { handleStartWorkout(); setShowGenerator(false); }} className="btn-volt w-full text-center py-4">START WORKOUT</button>
+                <button onClick={() => { setCurrentWorkout(generatedWorkout); handleStartWorkout(); setShowGenerator(false); }} className="btn-volt w-full text-center py-4">START WORKOUT</button>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}
