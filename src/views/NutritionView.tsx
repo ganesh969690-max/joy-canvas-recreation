@@ -1,7 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Camera, Sparkles, X, Loader2, Search, Pencil, List, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, dietMacroTargets } from "@/contexts/UserContext";
+import { supabase } from "@/integrations/supabase/client";
+
+interface FoodResult {
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+}
 
 const templateMeals = [
   { label: "South Indian Breakfast", cal: 450, p: 15, c: 60, f: 12, fi: 5 },
@@ -20,6 +30,9 @@ const NutritionView = () => {
   const [scanResult, setScanResult] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<FoodResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Editable confirmation card
   const [confirmMeal, setConfirmMeal] = useState<{ name: string; cal: number; p: number; c: number; f: number; fi: number } | null>(null);
@@ -40,11 +53,43 @@ const NutritionView = () => {
     { label: "Fiber", current: profile.fiber, target: targets.fiber, unit: "g" },
   ];
 
+  // Debounced USDA food search
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("food-search", {
+          body: { query: searchQuery.trim() },
+        });
+        if (error) throw error;
+        setSearchResults(data?.foods || []);
+      } catch (err) {
+        console.error("Food search error:", err);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 400);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery]);
+
   const openConfirm = (name: string, cal: number, p: number, c: number, f: number, fi: number) => {
     setConfirmMeal({ name, cal, p, c, f, fi });
     setEditP(p); setEditC(c); setEditF(f); setEditFi(fi); setEditCal(cal);
     setEditMode(false);
     setSearchQuery("");
+    setSearchResults([]);
   };
 
   const handleSaveMeal = () => {
@@ -98,10 +143,34 @@ const NutritionView = () => {
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search food..."
+            placeholder="Search food (e.g. chicken breast, banana)..."
             className="flex-1 bg-transparent px-3 py-3 text-sm font-semibold focus:outline-none"
            />
+          {searchLoading && <Loader2 size={16} className="text-muted-foreground animate-spin" />}
+          {searchQuery && !searchLoading && (
+            <button onClick={() => { setSearchQuery(""); setSearchResults([]); }} className="p-1">
+              <X size={14} className="text-muted-foreground" />
+            </button>
+          )}
         </div>
+
+        {/* Search Results Dropdown */}
+        {searchResults.length > 0 && (
+          <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-background border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+            {searchResults.map((food, i) => (
+              <button
+                key={`${food.name}-${i}`}
+                onClick={() => openConfirm(food.name, food.calories, food.protein, food.carbs, food.fat, food.fiber)}
+                className="w-full text-left px-4 py-3 hover:bg-secondary transition-colors border-b border-border last:border-b-0"
+              >
+                <p className="font-semibold text-sm truncate">{food.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {food.calories} kcal · {food.protein}g P · {food.carbs}g C · {food.fat}g F
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Added Foods List Button */}
