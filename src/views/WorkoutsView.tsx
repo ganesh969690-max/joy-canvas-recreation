@@ -320,17 +320,19 @@ const WorkoutsView = () => {
                   <span className="text-xs text-muted-foreground font-semibold">Intensity: {generatedWorkout.intensity}</span>
                   <span className="text-xs text-muted-foreground font-semibold">Equipment: {generatedWorkout.equipment.join(", ")}</span>
                 </div>
-                {generatedWorkout.exercises.map((ex, i) => (
-                  <div key={i} className="bg-secondary rounded-xl p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="text-xs font-black text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
-                        <h4 className="font-bold text-sm mt-0.5">{ex.name}</h4>
-                        <p className="text-xs text-muted-foreground mt-0.5">{ex.sets} sets × {ex.reps}</p>
+                <div className="max-h-[280px] overflow-y-auto space-y-3 pr-1 workout-scrollbar">
+                  {generatedWorkout.exercises.map((ex, i) => (
+                    <div key={i} className="bg-secondary rounded-xl p-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="text-xs font-black text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
+                          <h4 className="font-bold text-sm mt-0.5">{ex.name}</h4>
+                          <p className="text-xs text-muted-foreground mt-0.5">{ex.sets} sets × {ex.reps}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
                 <button onClick={() => { setCurrentWorkout(generatedWorkout); handleStartWorkout(); setShowGenerator(false); }} className="btn-volt w-full text-center py-4">START WORKOUT</button>
               </div>
             ) : null}
