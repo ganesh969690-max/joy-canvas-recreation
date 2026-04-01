@@ -282,7 +282,7 @@ const WorkoutsView = () => {
       )}
 
       {showGenerator && (
-        <div className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-center justify-center p-4 py-[16px]">
+        <div className="fixed inset-0 z-[60] bg-foreground/60 backdrop-blur-sm flex items-center justify-center p-4 py-[16px]">
            <div className="bg-background w-full max-w-lg max-h-[85vh] rounded-3xl p-6 pb-8 animate-in zoom-in-95 duration-300 text-xs font-thin overflow-y-auto my-0">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-nike-header text-lg">CUSTOM AI ROUTINE</h2>
