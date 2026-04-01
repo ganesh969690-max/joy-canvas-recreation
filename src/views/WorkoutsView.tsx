@@ -283,7 +283,7 @@ const WorkoutsView = () => {
 
       {showGenerator && (
         <div className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-center justify-center p-4">
-           <div className="bg-background w-full max-w-lg rounded-3xl p-6 pb-8 animate-in zoom-in-95 duration-300 text-xs font-thin">
+           <div className="bg-background w-full max-w-lg max-h-[85vh] rounded-3xl p-6 pb-8 animate-in zoom-in-95 duration-300 text-xs font-thin overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-nike-header text-lg">CUSTOM AI ROUTINE</h2>
               <button onClick={() => setShowGenerator(false)} className="p-1"><X size={24} /></button>
