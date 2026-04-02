@@ -142,13 +142,8 @@ const WorkoutsView = () => {
           </p>
           <h1 className="text-nike-header text-xl mb-6">{workoutTitle}</h1>
 
-          <div className="flex items-center justify-center mb-8">
-            <div className="bg-primary rounded-3xl px-12 py-8">
-              <p className="text-primary-foreground font-black text-5xl tracking-tight font-mono">
-                {formatTime(elapsed)}
-              </p>
-            </div>
-          </div>
+
+
 
           <h3 className="text-nike-header text-sm mb-3">EXERCISES</h3>
           <div className="space-y-2">
