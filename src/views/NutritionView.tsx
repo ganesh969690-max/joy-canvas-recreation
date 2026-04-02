@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Camera, Sparkles, X, Loader2, Search, Pencil, List, Trash2, Plus } from "lucide-react";
+import { Camera, Sparkles, X, Loader2, Search, Pencil, List, Trash2, Plus, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, dietMacroTargets } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
