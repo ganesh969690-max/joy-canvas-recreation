@@ -188,7 +188,7 @@ const WorkoutsView = ({ onPlayingChange }: { onPlayingChange?: (playing: boolean
           <div className="max-w-lg mx-auto flex gap-3">
             <button
               onClick={() => { setElapsed(0); setCheckedExercises(new Set()); }}
-              className="flex items-center justify-center gap-2 bg-muted rounded-full px-6 py-4 font-bold text-sm uppercase tracking-wider"
+              className="flex items-center justify-center gap-2 rounded-full px-6 py-4 font-bold text-sm uppercase tracking-wider bg-lime-400"
             >
               <Clock size={16} />
               Reset
