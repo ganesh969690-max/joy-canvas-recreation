@@ -155,7 +155,7 @@ const WorkoutsView = ({ onPlayingChange }: { onPlayingChange?: (playing: boolean
           </div>
 
           <h3 className="text-nike-header text-sm mb-3">EXERCISES</h3>
-          <div className="space-y-2">
+          <div className={`space-y-2 ${exercises.length > 3 ? "max-h-[280px] overflow-y-auto workout-scrollbar pr-1" : ""}`}>
             {exercises.map((ex, i) => (
               <button
                 key={i}
