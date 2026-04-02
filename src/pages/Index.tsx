@@ -10,27 +10,34 @@ import { UserProvider, useUser } from "@/contexts/UserContext";
 
 type Tab = "home" | "workouts" | "nutrition" | "premium" | "profile";
 
-const views: Record<Tab, React.FC> = {
-  home: HomeView,
-  workouts: WorkoutsView,
-  nutrition: NutritionView,
-  premium: PremiumAIView,
-  profile: ProfileView,
-};
-
 const AppContent = () => {
   const { profile } = useUser();
   const [activeTab, setActiveTab] = useState<Tab>("home");
-  const ActiveView = views[activeTab];
+  const [hideNav, setHideNav] = useState(false);
 
   if (!profile.onboarded) {
     return <OnboardingWizard />;
   }
 
+  const renderView = () => {
+    switch (activeTab) {
+      case "workouts":
+        return <WorkoutsView onPlayingChange={setHideNav} />;
+      case "home":
+        return <HomeView />;
+      case "nutrition":
+        return <NutritionView />;
+      case "premium":
+        return <PremiumAIView />;
+      case "profile":
+        return <ProfileView />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <ActiveView />
-      <BottomNav active={activeTab} onChange={setActiveTab} />
+      {renderView()}
+      {!hideNav && <BottomNav active={activeTab} onChange={setActiveTab} />}
     </div>
   );
 };

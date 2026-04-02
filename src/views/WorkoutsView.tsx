@@ -28,7 +28,7 @@ const browseWorkouts = [
   { image: mobilityImg, title: "Recovery Mobility", subtitle: "15 min · Low" },
 ];
 
-const WorkoutsView = () => {
+const WorkoutsView = ({ onPlayingChange }: { onPlayingChange?: (playing: boolean) => void }) => {
   const { toast } = useToast();
   const { profile } = useUser();
   const [currentWorkout, setCurrentWorkout] = useState<Workout>(defaultWorkout);
@@ -43,7 +43,11 @@ const WorkoutsView = () => {
   const [genConstraint, setGenConstraint] = useState("");
   const [genGoal, setGenGoal] = useState("");
 
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlayingState] = useState(false);
+  const setPlaying = (v: boolean) => {
+    setPlayingState(v);
+    onPlayingChange?.(v);
+  };
   const [paused, setPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [checkedExercises, setCheckedExercises] = useState<Set<number>>(new Set());
