@@ -265,8 +265,8 @@ const NutritionView = ({ onCameraChange }: { onCameraChange?: (open: boolean) =>
 
       {/* Camera Modal */}
       {showCamera && (
-        <div className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-end justify-center">
-          <div className="bg-background w-full max-w-lg rounded-t-3xl p-6 pb-8 animate-in slide-in-from-bottom duration-300">
+        <div className="fixed inset-0 z-[60] bg-foreground/60 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-background w-full max-w-lg rounded-3xl p-6 mx-4 animate-in zoom-in-95 duration-300">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-nike-header text-lg">SCAN MEAL</h2>
               <button onClick={() => setShowCamera(false)} className="p-1"><X size={24} /></button>
@@ -290,7 +290,15 @@ const NutritionView = ({ onCameraChange }: { onCameraChange?: (open: boolean) =>
                   )}
                 </div>
                 {!scanning && (
-                  <button onClick={handleSnap} className="btn-volt w-full text-center py-4">SNAP PHOTO</button>
+                  <div className="flex gap-3">
+                    <button onClick={handleSnap} className="btn-volt flex-1 text-center py-4 flex items-center justify-center gap-2">
+                      <Camera size={16} /> SNAP PHOTO
+                    </button>
+                    <label className="flex-1 text-center py-4 flex items-center justify-center gap-2 bg-secondary text-foreground font-bold rounded-full text-sm uppercase tracking-wider cursor-pointer transition-all active:scale-95 hover:bg-secondary/80">
+                      <Upload size={16} /> UPLOAD
+                      <input type="file" accept="image/*" className="hidden" onChange={handleSnap} />
+                    </label>
+                  </div>
                 )}
               </>
             ) : (
