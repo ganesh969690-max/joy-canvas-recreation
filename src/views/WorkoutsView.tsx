@@ -28,7 +28,7 @@ const browseWorkouts = [
   { image: mobilityImg, title: "Recovery Mobility", subtitle: "15 min · Low" },
 ];
 
-const WorkoutsView = () => {
+const WorkoutsView = ({ onPlayingChange }: { onPlayingChange?: (playing: boolean) => void }) => {
   const { toast } = useToast();
   const { profile } = useUser();
   const [currentWorkout, setCurrentWorkout] = useState<Workout>(defaultWorkout);
