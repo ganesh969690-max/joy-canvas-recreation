@@ -26,7 +26,7 @@ const AppContent = () => {
       case "home":
         return <HomeView />;
       case "nutrition":
-        return <NutritionView />;
+        return <NutritionView onCameraChange={setHideNav} />;
       case "premium":
         return <PremiumAIView />;
       case "profile":

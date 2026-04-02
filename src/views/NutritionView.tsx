@@ -20,12 +20,16 @@ const templateMeals = [
   { label: "Protein Smoothie", cal: 280, p: 35, c: 20, f: 4, fi: 2 },
 ];
 
-const NutritionView = () => {
+const NutritionView = ({ onCameraChange }: { onCameraChange?: (open: boolean) => void }) => {
   const { toast } = useToast();
   const { profile, logMeal, deleteMeal } = useUser();
   const meals = profile.loggedMeals || [];
   const [showFoodsList, setShowFoodsList] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+
+  useEffect(() => {
+    onCameraChange?.(showCamera);
+  }, [showCamera, onCameraChange]);
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState(false);
 
