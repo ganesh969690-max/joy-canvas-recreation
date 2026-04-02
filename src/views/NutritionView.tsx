@@ -26,6 +26,10 @@ const NutritionView = ({ onCameraChange }: { onCameraChange?: (open: boolean) =>
   const meals = profile.loggedMeals || [];
   const [showFoodsList, setShowFoodsList] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+
+  useEffect(() => {
+    onCameraChange?.(showCamera);
+  }, [showCamera, onCameraChange]);
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState(false);
 
