@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Sparkles, X, Clock, Dumbbell, AlertCircle, Loader2, Play, Pause, Square, Check } from "lucide-react";
+import { Sparkles, X, Clock, Loader2, Play, Pause, Square, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import WorkoutCard from "@/components/WorkoutCard";
@@ -13,13 +13,6 @@ import upperImg from "@/assets/workout-upper.jpg";
 import cardioImg from "@/assets/workout-cardio.jpg";
 import mobilityImg from "@/assets/workout-mobility.jpg";
 
-const quickPrompts = [
-  "Too Sore",
-  "No Equipment",
-  "Less Time",
-  "Different Muscle Group",
-];
-
 const browseWorkouts = [
   { image: upperImg, title: "Upper Body Strength", subtitle: "30 min · High" },
   { image: coreImg, title: "Core Crusher", subtitle: "20 min · Medium" },
@@ -28,20 +21,32 @@ const browseWorkouts = [
   { image: mobilityImg, title: "Recovery Mobility", subtitle: "15 min · Low" },
 ];
 
+const moodOptions = ["Full Send", "Take It Easy", "Something Different", "Technique Focus"];
+
 const WorkoutsView = ({ onPlayingChange }: { onPlayingChange?: (playing: boolean) => void }) => {
   const { toast } = useToast();
   const { profile } = useUser();
   const [currentWorkout, setCurrentWorkout] = useState<Workout>(defaultWorkout);
-  const [showAdjust, setShowAdjust] = useState(false);
-  const [adjusting, setAdjusting] = useState(false);
-  const [showGenerator, setShowGenerator] = useState(false);
-  const [genLoading, setGenLoading] = useState(false);
-  const [genResult, setGenResult] = useState(false);
-  const [generatedWorkout, setGeneratedWorkout] = useState<Workout | null>(null);
-  const [genTime, setGenTime] = useState("20");
-  const [genEquip, setGenEquip] = useState("5kg Dumbbells");
-  const [genConstraint, setGenConstraint] = useState("");
-  const [genGoal, setGenGoal] = useState("");
+
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [builderLoading, setBuilderLoading] = useState(false);
+  const [builderTime, setBuilderTime] = useState(profile.dailyTime + " mins");
+  const [builderEquip, setBuilderEquip] = useState("Barbell, Plates, Squat Rack");
+  const [builderConstraints, setBuilderConstraints] = useState("");
+  const [builderGoals, setBuilderGoals] = useState("");
+  const [builderMoods, setBuilderMoods] = useState<string[]>([]);
+
+  const sleepPoor = true;
+  const hrvLow = true;
+
+  const autoConstraint =
+    sleepPoor && hrvLow
+      ? "Poor sleep (4h 20m), low HRV — reduce intensity, avoid heavy axial loading, keep it recovery-friendly."
+      : sleepPoor
+      ? "Poor sleep (4h 20m) — reduce volume by ~20%."
+      : hrvLow
+      ? "Low HRV — deload session, focus on technique."
+      : "";
 
   const [playing, setPlayingState] = useState(false);
   const setPlaying = (v: boolean) => {
@@ -97,7 +102,6 @@ const WorkoutsView = ({ onPlayingChange }: { onPlayingChange?: (playing: boolean
   };
 
   const handleAdapt = async (prompt: string) => {
-    setAdjusting(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-workout', {
         body: { type: "adjust", prompt, currentWorkout },
@@ -106,34 +110,51 @@ const WorkoutsView = ({ onPlayingChange }: { onPlayingChange?: (playing: boolean
       if (data?.error) throw new Error(data.error);
       const workout = data.workout as Workout;
       setCurrentWorkout(workout);
-      setShowAdjust(false);
       toast({ title: "Workout Adapted ✓", description: `Switched to: ${workout.title}` });
     } catch (err: any) {
       console.error("Adapt error:", err);
       toast({ title: "Error", description: err.message || "Failed to adapt workout", variant: "destructive" });
-    } finally {
-      setAdjusting(false);
     }
   };
 
-  const handleGenerate = async () => {
-    setGenLoading(true);
-    setGenResult(false);
-    setGeneratedWorkout(null);
+  const handleBuilderSubmit = async () => {
+    setBuilderLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-workout', {
-        body: { type: "generate", time: genTime, equipment: genEquip, constraints: genConstraint, goals: genGoal },
+        body: {
+          type: "generate",
+          time: builderTime,
+          equipment: builderEquip,
+          constraints: builderConstraints,
+          goals: [builderGoals, ...builderMoods].filter(Boolean).join(", "),
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setGeneratedWorkout(data.workout as Workout);
-      setGenResult(true);
+      setCurrentWorkout(data.workout as Workout);
+      setShowBuilder(false);
+      toast({ title: "Workout Ready 💪", description: (data.workout as Workout).title });
     } catch (err: any) {
       console.error("Generate error:", err);
       toast({ title: "Error", description: err.message || "Failed to generate workout", variant: "destructive" });
     } finally {
-      setGenLoading(false);
+      setBuilderLoading(false);
     }
+  };
+
+  const toggleMood = (mood: string) => {
+    setBuilderMoods((prev) =>
+      prev.includes(mood) ? prev.filter((m) => m !== mood) : [...prev, mood]
+    );
+  };
+
+  const openBuilder = () => {
+    setBuilderTime(profile.dailyTime + " mins");
+    setBuilderConstraints(autoConstraint);
+    setBuilderGoals("");
+    setBuilderMoods([]);
+    setBuilderLoading(false);
+    setShowBuilder(true);
   };
 
   if (playing) {
@@ -234,19 +255,11 @@ const WorkoutsView = ({ onPlayingChange }: { onPlayingChange?: (playing: boolean
       </div>
 
       <button
-        onClick={() => { setShowAdjust(true); setAdjusting(false); }}
-        className="w-full card-premium flex items-center justify-center gap-2 mb-3 active:scale-[0.98] transition-transform"
+        onClick={openBuilder}
+        className="w-full card-premium flex items-center justify-center gap-2 mb-6 active:scale-[0.98] transition-transform"
       >
         <Sparkles size={16} className="text-nike-volt" />
-        <span className="text-xs font-black uppercase tracking-wider">✨ Adjust Today's Workout</span>
-      </button>
-
-      <button
-        onClick={() => { setShowGenerator(true); setGenResult(false); setGenLoading(false); setGeneratedWorkout(null); }}
-        className="w-full flex items-center justify-center gap-2 border border-border rounded-2xl py-3 mb-6 active:scale-[0.98] transition-transform"
-      >
-        <Sparkles size={16} className="text-nike-volt" />
-        <span className="text-xs font-black uppercase tracking-wider">✨ Generate Custom AI Routine</span>
+        <span className="text-xs font-black uppercase tracking-wider">✨ AI Workout Assistant</span>
       </button>
 
       <h2 className="text-nike-header text-sm mb-3">BROWSE WORKOUTS</h2>
@@ -256,97 +269,124 @@ const WorkoutsView = ({ onPlayingChange }: { onPlayingChange?: (playing: boolean
         ))}
       </div>
 
-      {showAdjust && (
-        <div className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-center justify-center">
-          <div className="bg-background w-full max-w-lg rounded-t-3xl p-6 pb-8 animate-in slide-in-from-bottom duration-300 rounded-3xl">
-            {adjusting ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <div className="bg-primary rounded-full p-6">
-                  <Loader2 size={32} className="text-nike-volt animate-spin" />
-                </div>
-                <p className="text-sm font-bold text-center">Generating...</p>
-                <p className="text-xs text-muted-foreground text-center">AI is rebuilding your workout...</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-nike-header text-lg">ADJUST WORKOUT</h2>
-                  <button onClick={() => setShowAdjust(false)} className="p-1"><X size={24} /></button>
-                </div>
-                <div className="card-premium mb-5">
-                  <div className="flex items-start gap-2">
-                    <Sparkles size={16} className="text-nike-volt mt-0.5 flex-shrink-0" />
-                    <p className="text-primary-foreground/80 text-xs leading-relaxed">
-                      Your readiness is low today. We suggest you swap your {profile.dailyTime}-min Heavy Squat session for a 15-min Recovery Mobility flow.
-                    </p>
+      {showBuilder && (
+        <div className="fixed inset-0 z-50 bg-foreground/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-lg max-h-[90vh] rounded-3xl p-6 animate-in zoom-in-95 duration-300 overflow-y-auto workout-scrollbar">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-nike-header text-lg">BUILD MY WORKOUT</h2>
+              <button onClick={() => setShowBuilder(false)} className="p-1"><X size={24} /></button>
+            </div>
+
+            {/* 1. Readiness Banner */}
+            <div className="card-premium mb-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-primary-foreground/70">Sleep</span>
+                    <span className="text-xs font-bold">4h 20m</span>
+                    <span className="bg-destructive text-destructive-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">Poor</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-primary-foreground/70">HRV</span>
+                    <span className="text-xs font-bold">Low</span>
+                    <span className="bg-destructive text-destructive-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">Low</span>
                   </div>
                 </div>
-                <div className="flex-wrap gap-2 mb-4 flex-row flex items-center justify-center">
-                  {quickPrompts.map((p) => (
-                    <button key={p} onClick={() => handleAdapt(p)} className="chip-filter active:scale-95 transition-transform">{p}</button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {showGenerator && (
-        <div className="fixed inset-0 z-[60] bg-foreground/60 backdrop-blur-sm flex items-center justify-center p-4 py-[16px]">
-           <div className="bg-background w-full max-w-lg max-h-[85vh] rounded-3xl p-6 pb-8 animate-in zoom-in-95 duration-300 text-xs font-thin overflow-y-auto my-0">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-nike-header text-lg">CUSTOM AI ROUTINE</h2>
-              <button onClick={() => setShowGenerator(false)} className="p-1"><X size={24} /></button>
+                <span className={`text-[10px] font-bold px-3 py-1 rounded-full ${
+                  sleepPoor || hrvLow
+                    ? "bg-destructive text-destructive-foreground"
+                    : "bg-green-500 text-white"
+                }`}>
+                  {sleepPoor || hrvLow ? "Low Readiness" : "Good Readiness"}
+                </span>
+              </div>
+              <p className="text-muted-foreground text-xs mt-2">
+                {sleepPoor && hrvLow
+                  ? "Poor sleep & low HRV detected."
+                  : sleepPoor
+                  ? "Low sleep detected."
+                  : "Low HRV detected."}
+              </p>
+              <p className="text-primary-foreground/50 text-[10px] mt-1">
+                These have been factored into your constraints automatically.
+              </p>
             </div>
-            {!genResult ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Time Available</label>
-                  <input value={genTime} onChange={(e) => setGenTime(e.target.value)} className="w-full border border-border rounded-xl px-4 py-3 text-sm font-semibold bg-secondary focus:outline-none focus:ring-2 focus:ring-foreground" placeholder="e.g., 20 mins" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Equipment</label>
-                  <input value={genEquip} onChange={(e) => setGenEquip(e.target.value)} className="w-full border border-border rounded-xl px-4 py-3 text-sm font-semibold bg-secondary focus:outline-none focus:ring-2 focus:ring-foreground" placeholder="e.g., 5kg Dumbbells" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Constraints</label>
-                  <input value={genConstraint} onChange={(e) => setGenConstraint(e.target.value)} className="w-full border border-border rounded-xl px-4 py-3 text-sm font-semibold bg-secondary focus:outline-none focus:ring-2 focus:ring-foreground" placeholder="e.g., Bad right knee" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Specific Goals</label>
-                  <textarea value={genGoal} onChange={(e) => setGenGoal(e.target.value)} className="w-full border border-border rounded-xl px-4 py-3 text-sm font-semibold bg-secondary focus:outline-none focus:ring-2 focus:ring-foreground resize-none" rows={2} placeholder="e.g., Focus on glutes and hamstrings" />
-                </div>
-                <button onClick={handleGenerate} disabled={genLoading} className="btn-volt w-full text-center flex items-center justify-center gap-2 py-4">
-                  {genLoading ? (<><Loader2 size={18} className="animate-spin" /><span>Generating...</span></>) : "Generate"}
-                </button>
+
+            <div className="space-y-4">
+              {/* 2. Time */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Time Available</label>
+                <input
+                  value={builderTime}
+                  onChange={(e) => setBuilderTime(e.target.value)}
+                  className="w-full border border-border rounded-xl px-4 py-3 text-sm font-semibold bg-secondary focus:outline-none focus:ring-2 focus:ring-foreground"
+                />
               </div>
-            ) : generatedWorkout ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={16} className="text-nike-volt" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{generatedWorkout.title}</span>
-                </div>
-                <div className="flex gap-3 mb-2">
-                  <span className="text-xs text-muted-foreground font-semibold">Intensity: {generatedWorkout.intensity}</span>
-                  <span className="text-xs text-muted-foreground font-semibold">Equipment: {generatedWorkout.equipment.join(", ")}</span>
-                </div>
-                <div className="max-h-[280px] overflow-y-auto space-y-3 pr-1 workout-scrollbar">
-                  {generatedWorkout.exercises.map((ex, i) => (
-                    <div key={i} className="bg-secondary rounded-xl p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <span className="text-xs font-black text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
-                          <h4 className="font-bold text-sm mt-0.5">{ex.name}</h4>
-                          <p className="text-xs text-muted-foreground mt-0.5">{ex.sets} sets × {ex.reps}</p>
-                        </div>
-                      </div>
-                    </div>
+
+              {/* 3. Equipment */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Equipment</label>
+                <input
+                  value={builderEquip}
+                  onChange={(e) => setBuilderEquip(e.target.value)}
+                  className="w-full border border-border rounded-xl px-4 py-3 text-sm font-semibold bg-secondary focus:outline-none focus:ring-2 focus:ring-foreground"
+                />
+              </div>
+
+              {/* 4. Constraints */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Constraints</label>
+                <textarea
+                  value={builderConstraints}
+                  onChange={(e) => setBuilderConstraints(e.target.value)}
+                  rows={3}
+                  className="w-full border border-border rounded-xl px-4 py-3 text-sm font-semibold bg-secondary focus:outline-none focus:ring-2 focus:ring-foreground resize-none"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Auto-filled from your Health readiness. Edit freely.</p>
+              </div>
+
+              {/* 5. Goals */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Goals / Focus</label>
+                <textarea
+                  value={builderGoals}
+                  onChange={(e) => setBuilderGoals(e.target.value)}
+                  rows={2}
+                  placeholder="e.g. focus on glutes, avoid chest, hit upper body..."
+                  className="w-full border border-border rounded-xl px-4 py-3 text-sm font-semibold bg-secondary focus:outline-none focus:ring-2 focus:ring-foreground resize-none"
+                />
+              </div>
+
+              {/* 6. Mood */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1 block">Mood</label>
+                <div className="flex flex-wrap gap-2">
+                  {moodOptions.map((mood) => (
+                    <button
+                      key={mood}
+                      onClick={() => toggleMood(mood)}
+                      className={`${builderMoods.includes(mood) ? "chip-filter-active" : "chip-filter"} active:scale-95 transition-transform`}
+                    >
+                      {mood}
+                    </button>
                   ))}
                 </div>
-                <button onClick={() => { setCurrentWorkout(generatedWorkout); handleStartWorkout(); setShowGenerator(false); }} className="btn-volt w-full text-center py-4">START WORKOUT</button>
               </div>
-            ) : null}
+
+              {/* 7. Submit */}
+              <button
+                onClick={handleBuilderSubmit}
+                disabled={builderLoading}
+                className="btn-volt w-full text-center flex items-center justify-center gap-2 py-4"
+              >
+                {builderLoading ? (
+                  <><Loader2 size={18} className="animate-spin" /><span>Generating...</span></>
+                ) : (
+                  "GENERATE WORKOUT"
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
